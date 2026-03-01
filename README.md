@@ -1,163 +1,275 @@
-## Scalable Diffusion Models with Transformers (DiT)<br><sub>Official PyTorch Implementation</sub>
+Diffusion Transformers for Magnetic Field Modeling in Medium-Frequency Transformers (MFTs)
 
-### [Paper](http://arxiv.org/abs/2212.09748) | [Project Page](https://www.wpeebles.com/DiT) | Run DiT-XL/2 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/wpeebles/DiT) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/facebookresearch/DiT/blob/main/run_DiT.ipynb) <a href="https://replicate.com/arielreplicate/scalable_diffusion_with_transformers"><img src="https://replicate.com/arielreplicate/scalable_diffusion_with_transformers/badge"></a>
+Official implementation for the paper:
 
-![DiT samples](visuals/sample_grid_0.png)
+“Utilizing Diffusion Models to Model Magnetic Field Distribution in Medium Frequency Transformers” 
 
-This repo contains PyTorch model definitions, pre-trained weights and training/sampling code for our paper exploring 
-diffusion models with transformers (DiTs). You can find more visualizations on our [project page](https://www.wpeebles.com/DiT).
+paper
 
-> [**Scalable Diffusion Models with Transformers**](https://www.wpeebles.com/DiT)<br>
-> [William Peebles](https://www.wpeebles.com), [Saining Xie](https://www.sainingxie.com)
-> <br>UC Berkeley, New York University<br>
+Overview
 
-We train latent diffusion models, replacing the commonly-used U-Net backbone with a transformer that operates on 
-latent patches. We analyze the scalability of our Diffusion Transformers (DiTs) through the lens of forward pass 
-complexity as measured by Gflops. We find that DiTs with higher Gflops---through increased transformer depth/width or
-increased number of input tokens---consistently have lower FID. In addition to good scalability properties, our 
-DiT-XL/2 models outperform all prior diffusion models on the class-conditional ImageNet 512×512 and 256×256 benchmarks, 
-achieving a state-of-the-art FID of 2.27 on the latter.
+This repository implements a conditional Diffusion Transformer (DiT) model to approximate the magnetic field distribution in the In-Window (IW) section of Medium-Frequency Transformers (MFTs).
 
-This repository contains:
+Instead of using computationally expensive Finite Element Methods (FEM), this work demonstrates that a properly trained diffusion model can:
 
-* 🪐 A simple PyTorch [implementation](models.py) of DiT
-* ⚡️ Pre-trained class-conditional DiT models trained on ImageNet (512x512 and 256x256)
-* 💥 A self-contained [Hugging Face Space](https://huggingface.co/spaces/wpeebles/DiT) and [Colab notebook](http://colab.research.google.com/github/facebookresearch/DiT/blob/main/run_DiT.ipynb) for running pre-trained DiT-XL/2 models
-* 🛸 A DiT [training script](train.py) using PyTorch DDP
+Achieve SSIM ≈ 0.92
 
-An implementation of DiT directly in Hugging Face `diffusers` can also be found [here](https://github.com/huggingface/diffusers/blob/main/docs/source/en/api/pipelines/dit.mdx).
+Generate magnetic field distributions in ~8 seconds
 
+Operate at approximately half the time of FEM (~16s)
 
-## Setup
+The model learns to map:
 
-First, download and set up the repo:
+MFT Structure Image  →  Magnetic Field Distribution Image
 
-```bash
-git clone https://github.com/facebookresearch/DiT.git
-cd DiT
-```
+using a conditional diffusion framework.
 
-We provide an [`environment.yml`](environment.yml) file that can be used to create a Conda environment. If you only want 
-to run pre-trained models locally on CPU, you can remove the `cudatoolkit` and `pytorch-cuda` requirements from the file.
+Problem Setup
 
-```bash
-conda env create -f environment.yml
-conda activate DiT
-```
+The dataset consists of paired 2D images:
 
+Structure Image
 
-## Sampling [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/wpeebles/DiT) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/facebookresearch/DiT/blob/main/run_DiT.ipynb)
-![More DiT samples](visuals/sample_grid_1.png)
+2D slice of IW section of MFT
 
-**Pre-trained DiT checkpoints.** You can sample from our pre-trained DiT models with [`sample.py`](sample.py). Weights for our pre-trained DiT model will be 
-automatically downloaded depending on the model you use. The script has various arguments to switch between the 256x256
-and 512x512 models, adjust sampling steps, change the classifier-free guidance scale, etc. For example, to sample from
-our 512x512 DiT-XL/2 model, you can use:
+Contains winding positions and geometry
 
-```bash
-python sample.py --image-size 512 --seed 1
-```
+Magnetic Field Image
 
-For convenience, our pre-trained DiT models can be downloaded directly here as well:
+Corresponding FEM-computed magnetic field distribution
 
-| DiT Model     | Image Resolution | FID-50K | Inception Score | Gflops | 
-|---------------|------------------|---------|-----------------|--------|
-| [XL/2](https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-256x256.pt) | 256x256          | 2.27    | 278.24          | 119    |
-| [XL/2](https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-512x512.pt) | 512x512          | 3.04    | 240.82          | 525    |
+Dataset characteristics:
 
+1000 image pairs
 
-**Custom DiT checkpoints.** If you've trained a new DiT model with [`train.py`](train.py) (see [below](#training-dit)), you can add the `--ckpt`
-argument to use your own checkpoint instead. For example, to sample from the EMA weights of a custom 
-256x256 DiT-L/4 model, run:
+80 / 10 / 10 train/val/test split
 
-```bash
-python sample.py --model DiT-L/4 --image-size 256 --ckpt /path/to/model.pt
-```
+Images resized to 256×256 or 512×512
 
+Magnetic field images generated using FEM (~16s per sample)
 
-## Training DiT
+Architecture
 
-We provide a training script for DiT in [`train.py`](train.py). This script can be used to train class-conditional 
-DiT models, but it can be easily modified to support other types of conditioning. To launch DiT-XL/2 (256x256) training with `N` GPUs on 
-one node:
+The model consists of:
 
-```bash
-torchrun --nnodes=1 --nproc_per_node=N train.py --model DiT-XL/2 --data-path /path/to/imagenet/train
-```
+1️⃣ VAE Encoder (Pretrained)
 
-### PyTorch Training Results
+stabilityai/sd-vae-ft-mse or ema
 
-We've trained DiT-XL/2 and DiT-B/4 models from scratch with the PyTorch training script
-to verify that it reproduces the original JAX results up to several hundred thousand training iterations. Across our experiments, the PyTorch-trained models give 
-similar (and sometimes slightly better) results compared to the JAX-trained models up to reasonable random variation. Some data points:
+Converts images into latent space
 
-| DiT Model  | Train Steps | FID-50K<br> (JAX Training) | FID-50K<br> (PyTorch Training) | PyTorch Global Training Seed |
-|------------|-------------|----------------------------|--------------------------------|------------------------------|
-| XL/2       | 400K        | 19.5                       | **18.1**                       | 42                           |
-| B/4        | 400K        | **68.4**                   | 68.9                           | 42                           |
-| B/4        | 400K        | 68.4                       | **68.3**                       | 100                          |
+2️⃣ Conditional Diffusion Transformer (DiT)
 
-These models were trained at 256x256 resolution; we used 8x A100s to train XL/2 and 4x A100s to train B/4. Note that FID 
-here is computed with 250 DDPM sampling steps, with the `mse` VAE decoder and without guidance (`cfg-scale=1`). 
+Transformer backbone instead of U-Net
 
-**TF32 Note (important for A100 users).** When we ran the above tests, TF32 matmuls were disabled per PyTorch's defaults. 
-We've enabled them at the top of `train.py` and `sample.py` because it makes training and sampling way way way faster on 
-A100s (and should for other Ampere GPUs too), but note that the use of TF32 may lead to some differences compared to 
-the above results.
+Patchified latent tokens (patch size = 2)
 
-### Enhancements
-Training (and sampling) could likely be sped-up significantly by:
-- [ ] using [Flash Attention](https://github.com/HazyResearch/flash-attention) in the DiT model
-- [ ] using `torch.compile` in PyTorch 2.0
+Sinusoidal timestep embedding
 
-Basic features that would be nice to add:
-- [ ] Monitor FID and other metrics
-- [ ] Generate and save samples from the EMA model periodically
-- [ ] Resume training from a checkpoint
-- [ ] AMP/bfloat16 support
+Conditioning via:
 
-**🔥 Feature Update** Check out this repository at https://github.com/chuanyangjin/fast-DiT to preview a selection of training speed acceleration and memory saving features including gradient checkpointing, mixed precision training and pre-extrated VAE features. With these advancements, we have achieved a training speed of 0.84 steps/sec for DiT-XL/2 using just a single A100 GPU.
+ResNet-18 embedding of structure image
 
-## Evaluation (FID, Inception Score, etc.)
+adaLN-Zero conditioning
 
-We include a [`sample_ddp.py`](sample_ddp.py) script which samples a large number of images from a DiT model in parallel. This script 
-generates a folder of samples as well as a `.npz` file which can be directly used with [ADM's TensorFlow
-evaluation suite](https://github.com/openai/guided-diffusion/tree/main/evaluations) to compute FID, Inception Score and
-other metrics. For example, to sample 50K images from our pre-trained DiT-XL/2 model over `N` GPUs, run:
+Classifier-free guidance
 
-```bash
-torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py --model DiT-XL/2 --num-fid-samples 50000
-```
+3️⃣ Loss
 
-There are several additional options; see [`sample_ddp.py`](sample_ddp.py) for details. 
+Log-cosh loss (found to be most stable)
 
+Linear beta scheduler
 
-## Differences from JAX
+AdamW optimizer
 
-Our models were originally trained in JAX on TPUs. The weights in this repo are ported directly from the JAX models. 
-There may be minor differences in results stemming from sampling with different floating point precisions. We re-evaluated 
-our ported PyTorch weights at FP32, and they actually perform marginally better than sampling in JAX (2.21 FID 
-versus 2.27 in the paper).
+DiT Architectures Used
+Model	Layers	Hidden Size	Heads
+DiT-S	12	384	6
+DiT-S+	12	768	6
+DiT-B	12	768	12
+DiT-L	24	1024	16
+DiT-XS (Final)	6	256	4
+Final Model (DiT-XS)
 
+SSIM: 0.92
 
-## BibTeX
+PSNR: 22.52 dB
 
-```bibtex
-@article{Peebles2022DiT,
-  title={Scalable Diffusion Models with Transformers},
-  author={William Peebles and Saining Xie},
-  year={2022},
-  journal={arXiv preprint arXiv:2212.09748},
-}
-```
+LPIPS: 0.050
 
+Generation time: ~8 seconds
 
-## Acknowledgments
-We thank Kaiming He, Ronghang Hu, Alexander Berg, Shoubhik Debnath, Tim Brooks, Ilija Radosavovic and Tete Xiao for helpful discussions. 
-William Peebles is supported by the NSF Graduate Research Fellowship.
+Hardware Used
 
-This codebase borrows from OpenAI's diffusion repos, most notably [ADM](https://github.com/openai/guided-diffusion).
+Training performed on:
 
+NVIDIA A40 (256×256 images)
 
-## License
-The code and model weights are licensed under CC-BY-NC. See [`LICENSE.txt`](LICENSE.txt) for details.
+NVIDIA A100 PCIe (512×512 images)
+
+Inference speed varies with model size.
+
+Installation
+
+Clone the repository:
+
+git clone <your_repo_url>
+cd <repo_name>
+
+Create environment (example):
+
+conda create -n mft-diffusion python=3.10
+conda activate mft-diffusion
+pip install -r requirements.txt
+Running on RunPod (Recommended Setup)
+
+This repository was primarily used in a RunPod.io GPU Jupyter Notebook environment.
+
+Workflow:
+
+Launch GPU pod (A40 or A100 recommended)
+
+Clone repository inside /workspace
+
+Upload dataset folder into:
+
+/workspace/BEP256
+
+The dataset loader automatically reads from:
+
+ImgDataset(r'/workspace/BEP256')
+Dataset Format
+
+Your dataset directory should look like:
+
+/workspace/BEP256/
+    sample1_structure.png
+    sample1_field.png
+    sample2_structure.png
+    sample2_field.png
+    ...
+
+The ImgDataset class loads image pairs.
+
+To test dataset loading:
+
+if __name__ == '__main__':
+    img1, img2 = next(iter(ImgDataset(r'/workspace/BEP256')))
+    plt.imshow(img1.permute(1, 2, 0))
+    plt.show()
+    plt.imshow(img2.permute(1, 2, 0))
+    plt.show()
+Training
+
+Training is performed using PyTorch Lightning.
+
+Example:
+python train.py \
+    --model DiT_Clipped \
+    --image-size 256 \
+    --epochs 150 \
+    --global-batch-size 32 \
+    --precision fp16
+Key Training Parameters
+
+Loss: Log-cosh
+
+Beta schedule: Linear
+
+Learning rate: 9e-4
+
+LR scheduler: Exponential (gamma=0.97)
+
+Batch size: 32
+
+Sampling steps: 25
+
+What Happens During Training
+
+Structure image embedded using ResNet-18
+
+Field image encoded via VAE
+
+Noise added (forward diffusion)
+
+DiT predicts noise
+
+Log-cosh loss computed
+
+Backpropagation using AdamW
+
+Validation metrics logged
+
+Checkpoints saved every 5 epochs
+
+Losses saved in:
+
+losses.csv
+loss_plot.png
+Sampling / Inference
+
+After training:
+
+Start from Gaussian noise
+
+Condition on structure image
+
+Run 25 reverse diffusion steps
+
+Decode via VAE
+
+Compute metrics
+
+Evaluation metrics:
+
+SSIM
+
+PSNR
+
+LPIPS
+
+Results Summary
+Model	SSIM	PSNR (dB)	LPIPS	Generation Time
+DiT-S	0.94	31.94	0.037	25s
+DiT-L	0.96	32.67	0.025	105s
+DiT-XS	0.92	22.52	0.050	8s
+
+Tradeoff:
+
+Larger models → higher accuracy
+
+Smaller models → faster than FEM
+
+Key Contribution
+
+This work demonstrates that diffusion models:
+
+Can approximate electromagnetic FEM simulations
+
+Provide practical speed-accuracy tradeoffs
+
+Open the door to AI-assisted engineering design
+
+Future Work
+
+LCM-LoRA acceleration
+
+FP4 quantization
+
+Richer training datasets
+
+Extension to 3D MFT modeling
+
+Application to other electromagnetic problems
+
+Citation
+
+If you use this repository, cite:
+
+M. Umer,
+"Utilizing Diffusion Models to Model Magnetic Field Distribution 
+in Medium Frequency Transformers",
+2024.
+License
+
+This repository is for research purposes.

@@ -6,7 +6,7 @@
 
 ## Overview
 
-This repository trains a **Diffusion Transformer (DiT)** to model the 2D magnetic field distribution in the In-Window (IW) section of a Medium Frequency Transformer, given an image of the transformer's winding structure as a condition. The model achieves an SSIM of **0.92** and generates images in **~8 seconds** — roughly **half the time** of traditional FEM simulation. This repository showcases my work in the context of my Bachelor End Project (BEP) at Eindhoven University of Technology. The paper is attached in this repository as `project_report.pdf`.
+This repository trains a **Diffusion Transformer (DiT)** to model the 2D magnetic field distribution in the In-Window (IW) section of a Medium Frequency Transformer, given an image of the transformer's winding structure as a condition. The model achieves an SSIM of **0.92** and generates images in **~8 seconds** — roughly **half the time** of traditional FEM simulation. This repository showcases my work in the context of my Bachelor End Project at Eindhoven University of Technology. The paper is attached in this repository as `project_report.pdf`.
 
 ![MFT structure and magnetic field distribution](visuals/fig_1_2.png) 
 ---

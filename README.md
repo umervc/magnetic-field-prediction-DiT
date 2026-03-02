@@ -35,13 +35,13 @@ The model takes **pairs of images** as input:
 The dataset consists of 1000 such pairs, split 80/10/10 into train/val/test. The DiT learns to generate the magnetic field image conditioned on the structure image, via a ResNet-18 image embedder that provides context to the diffusion process.
 
 ![Diffusion Process](visuals/fig3_diffusion.png)
+---
 
-Furthermore, a general overview of the software workflow of the Diffusion Model for Image Generation in this context is depicted below.
+## Software Workflow Overview
+
+A general overview of the software workflow of the Diffusion Model for Image Generation in this context is depicted below.
 
 ![Diffusion Process](visuals/fig_4.png)
-
-
-
 ---
 
 ## Setup

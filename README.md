@@ -190,19 +190,6 @@ The diffusion process is configured in `modules/diffusion.py` with the following
 
 ---
 
-## Visuals Guide (for repo maintainer)
-
-The following figures from the paper are good candidates to add to `assets/` and embed in this README:
-
-| Figure | Suggested filename | Where to embed |
-|---|---|---|
-| Fig. 2 — MFT structure + field pair | `assets/fig2_data_example.png` | Overview section |
-| Fig. 3 — Forward/reverse diffusion | `assets/fig3_diffusion.png` | How It Works section |
-| Fig. 4 — Full software workflow | `assets/fig4_workflow.png` | How It Works section |
-| Fig. 7/8/9 — Structure, ground truth, DiT output | `assets/fig7_structure.png` etc. | Results section |
-
----
-
 ## Citation
 
 If you use this code in your work, please cite the original DiT paper and this study:

@@ -8,8 +8,6 @@
 
 This repository trains a **Diffusion Transformer (DiT)** to model the 2D magnetic field distribution in the In-Window (IW) section of a Medium Frequency Transformer, given an image of the transformer's winding structure as a condition. The model achieves an SSIM of **0.92** and generates images in **~8 seconds** — roughly **half the time** of traditional FEM simulation.
 
-<!-- SUGGESTED VISUALS: Insert Figure 2 from the paper here (MFT structure + corresponding magnetic field distribution side by side) -->
-<!-- Example: ![MFT structure and magnetic field distribution](assets/fig2_mft_field.png) -->
 ![MFT structure and magnetic field distribution](visuals/fig2_mft_field.png) 
 ---
 
@@ -25,9 +23,6 @@ This repository trains a **Diffusion Transformer (DiT)** to model the 2D magneti
 
 FEM baseline: ~16 seconds per image. DiT-XS generates in ~8 seconds (2× faster).
 
-<!-- SUGGESTED VISUALS: Insert Figure 7, 8, 9 from the paper here (MFT structure, ground truth field, DiT reconstruction) -->
-<!-- Example: -->
-<!-- ![MFT Structure](assets/fig7_structure.png) ![Ground Truth](assets/fig8_ground_truth.png) ![DiT Output](assets/fig9_reconstructed.png) -->
 ![MFT structure, Ground truth field, DiT reconstruction](visuals/fig7_8_9.png)
 ---
 
@@ -39,8 +34,7 @@ The model takes **pairs of images** as input:
 
 The dataset consists of 1000 such pairs, split 80/10/10 into train/val/test. The DiT learns to generate the magnetic field image conditioned on the structure image, via a ResNet-18 image embedder that provides context to the diffusion process.
 
-<!-- SUGGESTED VISUALS: Insert Figure 3 from the paper (forward and reverse diffusion diagram) -->
-<!-- Example: ![Diffusion Process](assets/fig3_diffusion.png) -->
+![Diffusion Process](visuals/fig3_diffusion.png)
 
 ---
 

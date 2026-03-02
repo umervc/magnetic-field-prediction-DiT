@@ -10,7 +10,7 @@ This repository trains a **Diffusion Transformer (DiT)** to model the 2D magneti
 
 <!-- SUGGESTED VISUALS: Insert Figure 2 from the paper here (MFT structure + corresponding magnetic field distribution side by side) -->
 <!-- Example: ![MFT structure and magnetic field distribution](assets/fig2_mft_field.png) -->
-
+![MFT structure and magnetic field distribution](visuals/fig2_mft_field.png) -->
 ---
 
 ## Key Results

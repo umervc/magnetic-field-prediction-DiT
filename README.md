@@ -100,7 +100,7 @@ With all defaults this trains `DiT_Clipped` (6 layers, hidden size 640, 4 heads,
 python train.py --image-size 512 --global-batch-size 4 --epochs 150
 ```
 
-Multi-GPU training is handled automatically via PyTorch Lightning DDP.
+Multi-GPU training is possible via PyTorch Lightning DDP.
 
 ### Training Outputs
 
@@ -142,13 +142,6 @@ python sample.py --ckpt /path/to/checkpoint.pt --image-size 256
 
 Output is saved as `sample.png`.
 
-For large-scale parallel sampling (e.g. for FID evaluation):
-
-```bash
-torchrun --nnodes=1 --nproc_per_node=N sample_ddp.py --num-fid-samples 50000
-```
-
----
 
 ## Model Architecture
 
